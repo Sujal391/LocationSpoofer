@@ -5,18 +5,23 @@ import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import React, { useEffect, useState } from 'react';
 import {
+    ActivityIndicator,
+    Alert,
     SafeAreaView,
+    ScrollView,
     StyleSheet,
     Text,
     TouchableOpacity,
-    View
+    View,
 } from 'react-native';
 import { authEvents } from '../../utils/authEvents';
+import { getBottomSpace, getStatusBarHeight } from '../../utils/safeArea';
 import { getUsername, removeToken } from '../../utils/storage';
 
 export default function AdminDashboard() {
   const router = useRouter();
-  const [username, setUsername] = useState('Admin');
+  const [username, setUsername] = useState('');
+  const [loading, setLoading] = useState(false); // ✅ This was missing
 
   useEffect(() => {
     loadUserData();
@@ -27,31 +32,106 @@ export default function AdminDashboard() {
     if (user) setUsername(user);
   };
 
+  // FIXED LOGOUT FUNCTION
   const handleLogout = async () => {
-  await removeToken();
-  authEvents.emit(); // Notify layout about auth change
-  router.replace('/login');
-};
+    try {
+      console.log('Admin logout started');
+      setLoading(true); // ✅ Now works because setLoading is defined
+      
+      // Remove token from storage
+      await removeToken();
+      console.log('Token removed successfully');
+      
+      // Notify layout about auth change
+      authEvents.emit();
+      console.log('Auth event emitted');
+      
+      // Small delay to ensure everything is cleaned up
+      setTimeout(() => {
+        console.log('Redirecting to login');
+        setLoading(false); // Reset loading before navigation
+        router.replace('/login');
+      }, 100);
+      
+    } catch (error) {
+      console.error('Logout error:', error);
+      Alert.alert('Error', 'Failed to logout. Please try again.');
+      setLoading(false);
+    }
+  };
+
+  // Alternative with confirmation dialog
+  const handleLogoutWithConfirm = async () => {
+    Alert.alert(
+      'Logout',
+      'Are you sure you want to logout?',
+      [
+        {
+          text: 'Cancel',
+          style: 'cancel',
+        },
+        {
+          text: 'Yes, Logout',
+          onPress: async () => {
+            try {
+              console.log('Admin logout started');
+              setLoading(true);
+              
+              await removeToken();
+              console.log('Token removed successfully');
+              
+              authEvents.emit();
+              console.log('Auth event emitted');
+              
+              setTimeout(() => {
+                console.log('Redirecting to login');
+                setLoading(false);
+                router.replace('/login');
+              }, 100);
+              
+            } catch (error) {
+              console.error('Logout error:', error);
+              Alert.alert('Error', 'Failed to logout. Please try again.');
+              setLoading(false);
+            }
+          },
+        },
+      ],
+      { cancelable: false }
+    );
+  };
+
+  const navigateToRegisterCustomer = () => {
+    router.push('/admin/register-customer');
+  };
 
   return (
     <SafeAreaView style={styles.safeArea}>
       <StatusBar style="light" />
-      <LinearGradient
-        colors={['#12141D', '#1E232E']}
-        style={styles.gradient}
-      >
-        {/* Header */}
-        <View style={styles.header}>
-          <View>
-            <Text style={styles.greeting}>Welcome back,</Text>
-            <Text style={styles.username}>{username} (Admin) 👋</Text>
+      <LinearGradient colors={['#12141D', '#1E232E']} style={styles.gradient}>
+        <ScrollView 
+          contentContainerStyle={styles.scrollContainer}
+          showsVerticalScrollIndicator={false}
+        >
+          {/* Header */}
+          <View style={styles.header}>
+            <View>
+              <Text style={styles.greeting}>Welcome back,</Text>
+              <Text style={styles.username}>{username || 'Admin'} (Admin) 👋</Text>
+            </View>
+            <TouchableOpacity 
+              onPress={handleLogout} // or handleLogoutWithConfirm
+              style={styles.logoutButton}
+              disabled={loading}
+            >
+              {loading ? (
+                <ActivityIndicator size="small" color="#00E5FF" />
+              ) : (
+                <Ionicons name="log-out-outline" size={24} color="#00E5FF" />
+              )}
+            </TouchableOpacity>
           </View>
-          <TouchableOpacity onPress={handleLogout} style={styles.logoutButton}>
-            <Ionicons name="log-out-outline" size={24} color="#00E5FF" />
-          </TouchableOpacity>
-        </View>
 
-        <View style={styles.content}>
           {/* Stats Card */}
           <View style={styles.statsCard}>
             <View style={styles.statItem}>
@@ -73,8 +153,9 @@ export default function AdminDashboard() {
           {/* Register Customer Button */}
           <TouchableOpacity
             style={styles.actionCard}
-            onPress={() => router.push('/admin/register-customer')}
+            onPress={navigateToRegisterCustomer}
             activeOpacity={0.8}
+            disabled={loading}
           >
             <LinearGradient
               colors={['#1E232E', '#12141D']}
@@ -96,30 +177,34 @@ export default function AdminDashboard() {
           </TouchableOpacity>
 
           {/* Coming Soon Card */}
-          {/* <TouchableOpacity
-            style={styles.actionCard}
-            onPress={() => Alert.alert('Coming Soon', 'This feature is under development')}
-            activeOpacity={0.8}
-          >
-            <LinearGradient
-              colors={['#1E232E', '#12141D']}
-              style={styles.actionGradient}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-            >
-              <View style={styles.actionIcon}>
-                <Ionicons name="people" size={32} color="#00E5FF" />
-              </View>
-              <View style={styles.actionContent}>
-                <Text style={styles.actionTitle}>Manage Users</Text>
-                <Text style={styles.actionDescription}>
-                  View and manage all users
-                </Text>
-              </View>
-              <Ionicons name="chevron-forward" size={24} color="#A0AAB5" />
-            </LinearGradient>
-          </TouchableOpacity> */}
-        </View>
+          <TouchableOpacity
+  style={styles.actionCard}
+  onPress={() => router.push('/admin/customers')}
+  activeOpacity={0.8}
+  disabled={loading}
+>
+  <LinearGradient
+    colors={['#1E232E', '#12141D']}
+    style={styles.actionGradient}
+    start={{ x: 0, y: 0 }}
+    end={{ x: 1, y: 1 }}
+  >
+    <View style={styles.actionIcon}>
+      <Ionicons name="people" size={32} color="#00E5FF" />
+    </View>
+    <View style={styles.actionContent}>
+      <Text style={styles.actionTitle}>Manage Users</Text>
+      <Text style={styles.actionDescription}>
+        View all registered customers
+      </Text>
+    </View>
+    <Ionicons name="chevron-forward" size={24} color="#A0AAB5" />
+  </LinearGradient>
+</TouchableOpacity>
+
+          {/* Extra bottom padding */}
+          <View style={{ height: getBottomSpace() }} />
+        </ScrollView>
       </LinearGradient>
     </SafeAreaView>
   );
@@ -132,23 +217,28 @@ const styles = StyleSheet.create({
   },
   gradient: {
     flex: 1,
-    paddingTop: 20,
+  },
+  scrollContainer: {
+    paddingHorizontal: 20,
+    paddingTop: getStatusBarHeight() + 10,
+    paddingBottom: getBottomSpace() + 20,
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 24,
-    paddingBottom: 20,
+    marginBottom: 25,
+    paddingHorizontal: 5,
   },
   greeting: {
     fontSize: 14,
     color: '#A0AAB5',
-    marginBottom: 4,
+    fontFamily: 'Montserrat-Regular',
   },
   username: {
     fontSize: 20,
     color: '#FFFFFF',
+    fontFamily: 'Montserrat-Bold',
   },
   logoutButton: {
     width: 44,
@@ -159,10 +249,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderWidth: 1,
     borderColor: 'rgba(0, 229, 255, 0.2)',
-  },
-  content: {
-    flex: 1,
-    paddingHorizontal: 24,
   },
   statsCard: {
     flexDirection: 'row',
@@ -187,15 +273,19 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     marginTop: 8,
     marginBottom: 4,
+    fontFamily: 'Montserrat-Bold',
   },
   statLabel: {
     fontSize: 12,
     color: '#A0AAB5',
+    fontFamily: 'Montserrat-Regular',
   },
   sectionTitle: {
     fontSize: 18,
     color: '#FFFFFF',
     marginBottom: 16,
+    fontFamily: 'Montserrat-Bold',
+    paddingHorizontal: 5,
   },
   actionCard: {
     marginBottom: 16,
@@ -227,9 +317,11 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#FFFFFF',
     marginBottom: 4,
+    fontFamily: 'Montserrat-Bold',
   },
   actionDescription: {
     fontSize: 13,
     color: '#A0AAB5',
+    fontFamily: 'Montserrat-Regular',
   },
 });

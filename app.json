@@ -13,13 +13,19 @@
     },
     "android": {
       "adaptiveIcon": {
+        "permissions": [
+         "ACCESS_FINE_LOCATION",
+         "ACCESS_COARSE_LOCATION",
+         "ACCESS_MOCK_LOCATION"
+       ],
         "backgroundColor": "#E6F4FE",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
         "backgroundImage": "./assets/images/android-icon-background.png",
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
       "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "package": "com.sujal31.MockLocationApp"
     },
     "web": {
       "output": "static",
@@ -43,6 +49,12 @@
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "17d28c4a-37bf-409a-8fd2-b427da70baf3"
+      }
     }
   }
 }

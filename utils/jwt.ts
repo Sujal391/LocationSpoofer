@@ -3,7 +3,7 @@ import { jwtDecode } from 'jwt-decode';
 
 export interface JwtPayload {
   username?: string;
-  role?: 'admin' | 'user';
+  role?: 'Admin' | 'Customer';
   sub?: string;
   iat?: number;
   exp?: number;
@@ -20,7 +20,7 @@ export const decodeToken = (token: string): JwtPayload | null => {
   }
 };
 
-export const getUserRoleFromToken = (token: string): 'admin' | 'user' | null => {
+export const getUserRoleFromToken = (token: string): 'Admin' | 'Customer' | null => {
   const decoded = decodeToken(token);
   // Check different possible field names for role
   return decoded?.role || decoded?.userRole || decoded?.type || null;

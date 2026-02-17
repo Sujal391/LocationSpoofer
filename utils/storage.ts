@@ -32,7 +32,7 @@ export const removeToken = async () => {
   }
 };
 
-export const saveUserRole = async (role: 'admin' | 'user') => {
+export const saveUserRole = async (role: 'admin' | 'customer') => {
   try {
     await AsyncStorage.setItem(USER_ROLE_KEY, role);
   } catch (error) {
@@ -40,9 +40,9 @@ export const saveUserRole = async (role: 'admin' | 'user') => {
   }
 };
 
-export const getUserRole = async (): Promise<'admin' | 'user' | null> => {
+export const getUserRole = async (): Promise<'admin' | 'customer' | null> => {
   try {
-    return await AsyncStorage.getItem(USER_ROLE_KEY) as 'admin' | 'user' | null;
+    return await AsyncStorage.getItem(USER_ROLE_KEY) as 'admin' | 'customer' | null;
   } catch (error) {
     console.error('Error getting user role', error);
     return null;

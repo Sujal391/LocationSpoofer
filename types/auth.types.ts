@@ -6,6 +6,8 @@ export interface LoginRequest {
 
 export interface LoginResponse {
   token: string;
+  username: string;
+  role: string; // "Customer" or "Admin" (assuming)
 }
 
 export interface RegisterRequest {

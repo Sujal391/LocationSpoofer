@@ -18,6 +18,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { register } from '../../services/auth.service';
 import { StatusBar } from 'expo-status-bar';
+import { getStatusBarHeight, getBottomSpace } from '../../utils/safeArea';
 
 export default function RegisterScreen() {
   const router = useRouter();
@@ -205,6 +206,8 @@ const styles = StyleSheet.create({
   },
   scrollContainer: {
     flexGrow: 1,
+    paddingTop: getStatusBarHeight(),
+    paddingBottom: getBottomSpace(),
   },
   background: {
     flex: 1,

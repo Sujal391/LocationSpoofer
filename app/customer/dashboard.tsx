@@ -1,29 +1,41 @@
-// app/user/dashboard.tsx - Updated for manual input
-import { Ionicons } from '@expo/vector-icons';
+// app/customer/dashboard.tsx
+import React, { useState, useEffect } from 'react';
+import {
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  StyleSheet,
+  SafeAreaView,
+  Alert,
+  ScrollView,
+  ActivityIndicator,
+} from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import React, { useState } from 'react';
-import {
-    ActivityIndicator,
-    Alert,
-    SafeAreaView,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View
-} from 'react-native';
+import { removeToken, getUsername } from '../../utils/storage';
+import { authEvents } from '../../utils/authEvents';
+import { getStatusBarHeight, getBottomSpace } from '../../utils/safeArea';
 import { setLocation } from '../../services/location.service';
-import { removeToken } from '../../utils/storage';
 
-export default function UserDashboard() {
+export default function CustomerDashboard() {
   const router = useRouter();
+  const [username, setUsername] = useState('');
   const [latitude, setLatitude] = useState('');
   const [longitude, setLongitude] = useState('');
   const [loading, setLoading] = useState(false);
   const [activeMock, setActiveMock] = useState(false);
+
+  useEffect(() => {
+    loadUserData();
+  }, []);
+
+  const loadUserData = async () => {
+    const user = await getUsername();
+    if (user) setUsername(user);
+  };
 
   const handleSetLocation = async () => {
     if (!latitude || !longitude) {
@@ -51,12 +63,7 @@ export default function UserDashboard() {
 
     setLoading(true);
     try {
-      // Send to backend for logging/tracking
       await setLocation({ latitude: lat, longitude: lng });
-      
-      // Here you would also save to system mock location
-      // This requires native module integration
-      
       setActiveMock(true);
       Alert.alert(
         'Success', 
@@ -70,19 +77,48 @@ export default function UserDashboard() {
   };
 
   const handleLogout = async () => {
-    await removeToken();
-    router.replace('/login');
+    try {
+      console.log('Logout started');
+      setLoading(true);
+      
+      await removeToken();
+      console.log('Token removed');
+      
+      authEvents.emit();
+      console.log('Auth event emitted');
+      
+      setTimeout(() => {
+        console.log('Redirecting to login');
+        router.replace('/login');
+      }, 100);
+      
+    } catch (error) {
+      console.error('Logout error:', error);
+      Alert.alert('Error', 'Failed to logout. Please try again.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
     <SafeAreaView style={styles.safeArea}>
       <StatusBar style="light" />
       <LinearGradient colors={['#12141D', '#1E232E']} style={styles.gradient}>
-        <ScrollView contentContainerStyle={styles.scrollContainer}>
+        <ScrollView 
+          contentContainerStyle={styles.scrollContainer}
+          showsVerticalScrollIndicator={false}
+        >
           {/* Header */}
           <View style={styles.header}>
-            <Text style={styles.title}>Mock Location Control</Text>
-            <TouchableOpacity onPress={handleLogout} style={styles.logoutButton}>
+            <View>
+              <Text style={styles.greeting}>Welcome,</Text>
+              <Text style={styles.username}>{username || 'Customer'} 👋</Text>
+            </View>
+            <TouchableOpacity 
+              onPress={handleLogout} 
+              style={styles.logoutButton}
+              disabled={loading}
+            >
               <Ionicons name="log-out-outline" size={24} color="#00E5FF" />
             </TouchableOpacity>
           </View>
@@ -128,6 +164,7 @@ export default function UserDashboard() {
                 value={latitude}
                 onChangeText={setLatitude}
                 keyboardType="numeric"
+                editable={!loading}
               />
             </View>
 
@@ -141,6 +178,7 @@ export default function UserDashboard() {
                 value={longitude}
                 onChangeText={setLongitude}
                 keyboardType="numeric"
+                editable={!loading}
               />
             </View>
 
@@ -164,7 +202,7 @@ export default function UserDashboard() {
             </TouchableOpacity>
           </View>
 
-          {/* Quick Presets (Optional) */}
+          {/* Quick Presets */}
           <Text style={styles.presetTitle}>Quick Presets</Text>
           <View style={styles.presetContainer}>
             <TouchableOpacity 
@@ -173,6 +211,7 @@ export default function UserDashboard() {
                 setLatitude('40.7128');
                 setLongitude('-74.0060');
               }}
+              disabled={loading}
             >
               <Text style={styles.presetText}>🗽 New York</Text>
             </TouchableOpacity>
@@ -182,6 +221,7 @@ export default function UserDashboard() {
                 setLatitude('51.5074');
                 setLongitude('-0.1278');
               }}
+              disabled={loading}
             >
               <Text style={styles.presetText}>🇬🇧 London</Text>
             </TouchableOpacity>
@@ -191,10 +231,14 @@ export default function UserDashboard() {
                 setLatitude('35.6762');
                 setLongitude('139.6503');
               }}
+              disabled={loading}
             >
               <Text style={styles.presetText}>🗼 Tokyo</Text>
             </TouchableOpacity>
           </View>
+
+          {/* Extra bottom padding */}
+          <View style={{ height: getBottomSpace() }} />
         </ScrollView>
       </LinearGradient>
     </SafeAreaView>
@@ -210,16 +254,23 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContainer: {
-    padding: 20,
+    paddingHorizontal: 20,
+    paddingTop: getStatusBarHeight() + 10,
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 20,
+    marginBottom: 25,
+    paddingHorizontal: 5,
   },
-  title: {
-    fontSize: 24,
+  greeting: {
+    fontSize: 14,
+    color: '#A0AAB5',
+    fontFamily: 'Montserrat-Regular',
+  },
+  username: {
+    fontSize: 20,
     color: '#FFFFFF',
     fontFamily: 'Montserrat-Bold',
   },
@@ -236,7 +287,7 @@ const styles = StyleSheet.create({
   statusCard: {
     backgroundColor: '#1E232E',
     borderRadius: 16,
-    padding: 16,
+    padding: 18,
     marginBottom: 20,
     borderWidth: 1,
     borderColor: 'rgba(0, 229, 255, 0.1)',
@@ -244,7 +295,7 @@ const styles = StyleSheet.create({
   statusHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 8,
+    marginBottom: 10,
   },
   statusTitle: {
     fontSize: 16,
@@ -261,7 +312,7 @@ const styles = StyleSheet.create({
   instructionsCard: {
     backgroundColor: '#1E232E',
     borderRadius: 16,
-    padding: 16,
+    padding: 18,
     marginBottom: 20,
     borderWidth: 1,
     borderColor: 'rgba(0, 229, 255, 0.1)',
@@ -269,20 +320,21 @@ const styles = StyleSheet.create({
   instructionsTitle: {
     fontSize: 16,
     color: '#00E5FF',
-    marginBottom: 12,
+    marginBottom: 15,
     fontFamily: 'Montserrat-Bold',
   },
   instructionStep: {
     fontSize: 13,
     color: '#A0AAB5',
-    marginBottom: 8,
+    marginBottom: 10,
     fontFamily: 'Montserrat-Regular',
     lineHeight: 18,
+    paddingLeft: 5,
   },
   inputCard: {
     backgroundColor: '#1E232E',
     borderRadius: 16,
-    padding: 16,
+    padding: 18,
     marginBottom: 20,
     borderWidth: 1,
     borderColor: 'rgba(0, 229, 255, 0.1)',
@@ -299,8 +351,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: '#12141D',
     borderRadius: 12,
-    paddingHorizontal: 12,
-    height: 50,
+    paddingHorizontal: 14,
+    height: 52,
     borderWidth: 1,
     borderColor: 'rgba(160, 170, 181, 0.2)',
   },
@@ -317,7 +369,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   buttonGradient: {
-    height: 50,
+    height: 54,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -330,17 +382,19 @@ const styles = StyleSheet.create({
   presetTitle: {
     fontSize: 16,
     color: '#FFFFFF',
-    marginBottom: 12,
+    marginBottom: 15,
     fontFamily: 'Montserrat-SemiBold',
+    paddingHorizontal: 5,
   },
   presetContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
+    marginBottom: 10,
   },
   presetButton: {
     flex: 1,
     backgroundColor: '#1E232E',
-    padding: 12,
+    padding: 14,
     borderRadius: 12,
     marginHorizontal: 4,
     alignItems: 'center',

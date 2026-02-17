@@ -3,7 +3,7 @@ import api from './api';
 
 export interface UserInfo {
   username: string;
-  role: 'admin' | 'user';
+  role: 'Admin' | 'Customer';
 }
 
 // You'll need to create this endpoint on your backend
@@ -26,7 +26,7 @@ export const getUserInfo = async (): Promise<UserInfo> => {
       // This is just for demonstration - replace with actual API
       resolve({
         username: 'user', // This should come from your API
-        role: 'user' // This should come from your API
+        role: 'Customer' // This should come from your API
       });
     }, 500);
   });

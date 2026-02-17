@@ -11,6 +11,7 @@ export const authEvents = {
     };
   },
   emit: () => {
+    console.log('Auth event emitted, notifying', listeners.length, 'listeners');
     listeners.forEach(listener => listener());
   },
 };
