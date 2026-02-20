@@ -13,9 +13,18 @@ const api = axios.create({
 api.interceptors.request.use(
   async (config) => {
     const token = await Storage.getToken();
+
+    console.log("BASE URL:", config.baseURL);
+    console.log("ENDPOINT:", config.url);
+    console.log("FULL REQUEST URL:", config.baseURL + config.url);
+    console.log("INTERCEPTOR TOKEN:", token);
+
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
+
+    console.log("HEADERS:", config.headers);
+
     return config;
   },
   (error) => Promise.reject(error)

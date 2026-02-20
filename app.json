@@ -21,7 +21,8 @@
       "permissions": [                // ← MOVED HERE (outside adaptiveIcon)
         "ACCESS_FINE_LOCATION",
         "ACCESS_COARSE_LOCATION",
-        "ACCESS_MOCK_LOCATION"
+        "ACCESS_MOCK_LOCATION",
+        "POST_NOTIFICATIONS"
       ],
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
@@ -32,6 +33,7 @@
       "favicon": "./assets/images/favicon.png"
     },
     "plugins": [
+      "./plugins/with-mock-location-module",
       "expo-router",
       [
         "expo-splash-screen",

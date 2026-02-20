@@ -1,7 +1,7 @@
 // services/auth.service.ts
-import api from './api';
 import { LoginRequest, LoginResponse, RegisterRequest, RegisterResponse } from '../types/auth.types';
 import { saveToken } from '../utils/storage';
+import api from './api';
 
 export const login = async (data: LoginRequest): Promise<LoginResponse> => {
   try {
@@ -15,6 +15,12 @@ export const login = async (data: LoginRequest): Promise<LoginResponse> => {
       console.log('Token saved');
     }
     
+    if (response.data.token) {
+      await saveToken(response.data.token);
+      api.defaults.headers.common.Authorization = `Bearer ${response.data.token}`;
+      console.log('Token saved and header set');
+    }
+
     return response.data;
   } catch (error) {
     console.error('Login API error:', error);

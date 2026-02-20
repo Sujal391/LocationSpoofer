@@ -20,7 +20,7 @@ import {
 import { login } from "../../services/auth.service";
 import { authEvents } from "../../utils/authEvents";
 import { getBottomSpace, getStatusBarHeight } from "../../utils/safeArea";
-import { saveUserRole, saveUsername } from "../../utils/storage";
+import { saveToken, saveUserRole, saveUsername } from "../../utils/storage";
 
 export default function LoginScreen() {
   const router = useRouter();
@@ -41,6 +41,7 @@ export default function LoginScreen() {
       const response = await login({ username, password });
       console.log("2. Login response:", response);
 
+      await saveToken(response.token);
       // Save user data
       await saveUsername(response.username);
 

@@ -1,24 +1,29 @@
 // app/customer/dashboard.tsx
-import React, { useState, useEffect } from 'react';
+import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
+import { useRouter } from 'expo-router';
+import { StatusBar } from 'expo-status-bar';
+import React, { useEffect, useState } from 'react';
 import {
-  View,
+  ActivityIndicator,
+  Alert,
+  PermissionsAndroid,
+  Platform,
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
-  StyleSheet,
-  SafeAreaView,
-  Alert,
-  ScrollView,
-  ActivityIndicator,
+  View,
 } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
-import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
-import { StatusBar } from 'expo-status-bar';
-import { removeToken, getUsername } from '../../utils/storage';
+import {
+  setMockLocationNative,
+  startStatusNotificationNative,
+} from '../../services/mock-location.service';
 import { authEvents } from '../../utils/authEvents';
-import { getStatusBarHeight, getBottomSpace } from '../../utils/safeArea';
-import { setLocation } from '../../services/location.service';
+import { getBottomSpace, getStatusBarHeight } from '../../utils/safeArea';
+import { getUsername, removeToken } from '../../utils/storage';
 
 export default function CustomerDashboard() {
   const router = useRouter();
@@ -35,6 +40,20 @@ export default function CustomerDashboard() {
   const loadUserData = async () => {
     const user = await getUsername();
     if (user) setUsername(user);
+  };
+
+  const requestNotificationPermissionIfNeeded = async () => {
+    if (Platform.OS !== 'android') return;
+    if (Platform.Version < 33) return;
+
+    try {
+      const result = await PermissionsAndroid.request(
+        PermissionsAndroid.PERMISSIONS.POST_NOTIFICATIONS
+      );
+      console.log('[CustomerDashboard] POST_NOTIFICATIONS permission:', result);
+    } catch (error) {
+      console.error('[CustomerDashboard] notification permission request failed', error);
+    }
   };
 
   const handleSetLocation = async () => {
@@ -62,16 +81,23 @@ export default function CustomerDashboard() {
     }
 
     setLoading(true);
+    console.log('[CustomerDashboard] set mock location pressed', { lat, lng });
     try {
-      await setLocation({ latitude: lat, longitude: lng });
+      await requestNotificationPermissionIfNeeded();
+      await startStatusNotificationNative(lat, lng);
+      await setMockLocationNative(lat, lng);
+      console.log('[CustomerDashboard] setMockLocationNative success');
       setActiveMock(true);
       Alert.alert(
         'Success', 
         `Mock location set to:\nLat: ${lat}\nLng: ${lng}\n\nNow select this app as mock location app in Developer Options.`
       );
     } catch (error: any) {
-      Alert.alert('Error', error.message || 'Could not set location');
+      console.error('[CustomerDashboard] setMockLocationNative failed', error);
+      setActiveMock(false);
+      console.error('Location set error:', error);
     } finally {
+      console.log('[CustomerDashboard] set mock location flow ended');
       setLoading(false);
     }
   };
