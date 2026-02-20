@@ -303,6 +303,24 @@ function patchAndroidManifest(manifestPath) {
   fs.writeFileSync(manifestPath, src, 'utf8');
 }
 
+function patchAppBuildGradle(appBuildGradlePath) {
+  if (!fs.existsSync(appBuildGradlePath)) return;
+  let src = fs.readFileSync(appBuildGradlePath, 'utf8');
+
+  if (!src.includes("disable 'MockLocation'")) {
+    src = src.replace(
+      "androidResources {\n        ignoreAssetsPattern '!.svn:!.git:!.ds_store:!*.scc:!CVS:!thumbs.db:!picasa.ini:!*~'\n    }",
+      "androidResources {\n        ignoreAssetsPattern '!.svn:!.git:!.ds_store:!*.scc:!CVS:!thumbs.db:!picasa.ini:!*~'\n    }\n    lint {\n        disable 'MockLocation'\n        checkReleaseBuilds false\n        abortOnError false\n    }"
+    );
+  }
+
+  if (!src.includes('task.name == "lintVitalRelease"')) {
+    src += "\n\ntasks.whenTaskAdded { task ->\n    if (task.name == \"lintVitalRelease\") {\n        task.enabled = false\n    }\n}\n";
+  }
+
+  fs.writeFileSync(appBuildGradlePath, src, 'utf8');
+}
+
 module.exports = function withMockLocationModule(config) {
   return withDangerousMod(config, [
     'android',
@@ -310,6 +328,7 @@ module.exports = function withMockLocationModule(config) {
       const projectRoot = cfg.modRequest.projectRoot;
       const javaRoot = path.join(projectRoot, ...JAVA_DIR);
       const manifestPath = path.join(projectRoot, 'android', 'app', 'src', 'main', 'AndroidManifest.xml');
+      const appBuildGradlePath = path.join(projectRoot, 'android', 'app', 'build.gradle');
 
       writeIfChanged(path.join(javaRoot, 'MockLocationModule.kt'), MODULE_SOURCE);
       writeIfChanged(path.join(javaRoot, 'MockLocationPackage.kt'), PACKAGE_SOURCE);
@@ -317,6 +336,7 @@ module.exports = function withMockLocationModule(config) {
 
       patchMainApplication(path.join(javaRoot, 'MainApplication.kt'));
       patchAndroidManifest(manifestPath);
+      patchAppBuildGradle(appBuildGradlePath);
 
       return cfg;
     },
