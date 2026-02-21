@@ -56,6 +56,41 @@ export default function CustomerDashboard() {
     }
   };
 
+  const requestLocationPermissionIfNeeded = async (): Promise<boolean> => {
+    if (Platform.OS !== 'android') return true;
+
+    try {
+      const fineResult = await PermissionsAndroid.request(
+        PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION
+      );
+      const coarseResult = await PermissionsAndroid.request(
+        PermissionsAndroid.PERMISSIONS.ACCESS_COARSE_LOCATION
+      );
+
+      const granted =
+        fineResult === PermissionsAndroid.RESULTS.GRANTED ||
+        coarseResult === PermissionsAndroid.RESULTS.GRANTED;
+
+      console.log('[CustomerDashboard] location permission results:', {
+        fineResult,
+        coarseResult,
+        granted,
+      });
+
+      if (!granted) {
+        Alert.alert(
+          'Location Permission Required',
+          'Please allow location permission to continue.'
+        );
+      }
+
+      return granted;
+    } catch (error) {
+      console.error('[CustomerDashboard] location permission request failed', error);
+      return false;
+    }
+  };
+
   const handleSetLocation = async () => {
     if (!latitude || !longitude) {
       Alert.alert('Error', 'Please enter both coordinates');
@@ -83,6 +118,11 @@ export default function CustomerDashboard() {
     setLoading(true);
     console.log('[CustomerDashboard] set mock location pressed', { lat, lng });
     try {
+      const hasLocationPermission = await requestLocationPermissionIfNeeded();
+      if (!hasLocationPermission) {
+        return;
+      }
+
       await requestNotificationPermissionIfNeeded();
       await startStatusNotificationNative(lat, lng);
       await setMockLocationNative(lat, lng);
@@ -150,7 +190,7 @@ export default function CustomerDashboard() {
           </View>
 
           {/* Status Card */}
-          <View style={styles.statusCard}>
+          {/* <View style={styles.statusCard}>
             <View style={styles.statusHeader}>
               <Ionicons 
                 name={activeMock ? "checkmark-circle" : "alert-circle"} 
@@ -166,7 +206,7 @@ export default function CustomerDashboard() {
                 ? "Your device is using the coordinates below as mock location"
                 : "Set coordinates below and enable mock location in Developer Options"}
             </Text>
-          </View>
+          </View> */}
 
           {/* Instructions Card */}
           <View style={styles.instructionsCard}>
